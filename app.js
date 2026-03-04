@@ -28,21 +28,23 @@ app.get('/seats', (req, res)=>{
 //Booking info
 app.post('/bookings', (req, res)=>{
 	const userInfo = req.body;
-	var validityFlag = true;
+	
 	if(!userInfo.mobile || userInfo.mobile.length !== 10 || !userInfo.seats || userInfo.seats.length > 10 || userInfo.seats.length <= 0){
-		validityFlag = false;
+		return res.status(400).json({message:"only 10 digit mobile numbers allowed"});
 	}
 	//remove duplicates
 	userInfo.seats = [...new Set(userInfo.seats)];
 
 	userInfo.seats.forEach(seatElement => {
-		if(!(chkValidEntry(seatElement)) || !(chkAvailability(seatElement, seats.seats))){
-			validityFlag = false;
+		if(!(chkValidEntry(seatElement))){
+			return res.status(400).json({message:"Invalid seat ID "});
 		}
+		if(!(chkAvailability(seatElement, seats.seats))){
+			return res.status(400).json({message:"SeatID valid but not available"});
+		}
+		
 	});
-	if(!validityFlag){
-		return res.status(400).json({message:"invalid or missing details"});
-	}
+	
 	res.status(200).json({message:"data valid",userInfo});
 
 })
