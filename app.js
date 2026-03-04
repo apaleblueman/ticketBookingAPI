@@ -1,6 +1,6 @@
 const express = require('express');
 const seats = require('./seats.js');
-const { chkValidEntry } = require('./booking.js');
+const { chkValidEntry, chkAvailability } = require('./booking.js');
 const port = 3000;
 const app = express();
 app.use(express.json());
@@ -17,13 +17,8 @@ app.get('/', (req, res)=>{
 app.get('/seats', (req, res)=>{
 	let results = seats.seats;
 	const queryFilter = req.query;
-	if(queryFilter.status){
-		results = results.filter((seatObj)=>seatObj.status === queryFilter.status);
-	}
-	if(queryFilter.row){
-		results = results.filter((seatObj)=>seatObj.row.toLowerCase() === queryFilter.row.toLowerCase());
-	}
-
+	if(queryFilter.status){results = results.filter((seatObj)=>seatObj.status === queryFilter.status);}
+	if(queryFilter.row){results = results.filter((seatObj)=>seatObj.row.toLowerCase() === queryFilter.row.toLowerCase());}
 	if(results.length<=0){
 		return res.status(200).json({queryFilter,message:"no data available for this filter"})
 	}
@@ -37,11 +32,11 @@ app.post('/bookings', (req, res)=>{
 	if(!userInfo.mobile || userInfo.mobile.length !== 10 || !userInfo.seats || userInfo.seats.length > 10 || userInfo.seats.length <= 0){
 		validityFlag = false;
 	}
-	
+	//remove duplicates
 	userInfo.seats = [...new Set(userInfo.seats)];
 
 	userInfo.seats.forEach(seatElement => {
-		if(!(chkValidEntry(seatElement))){
+		if(!(chkValidEntry(seatElement)) || !(chkAvailability(seatElement, seats.seats))){
 			validityFlag = false;
 		}
 	});
