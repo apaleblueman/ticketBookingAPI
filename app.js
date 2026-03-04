@@ -31,7 +31,7 @@ app.get('/seats', (req, res)=>{
 app.post('/bookings', async (req, res)=>{
 	const userInfo = req.body;
 	if(!userInfo.mobile || userInfo.mobile.length !== 10 || !userInfo.seats || userInfo.seats.length > 10 || userInfo.seats.length <= 0){
-		return res.status(400).json({message:"only 10 digit mobile numbers allowed"});
+		return res.status(400).json({message:"only 10 digit mobile numbers and no more that 10 seats allowed"});
 	}
 	//remove duplicates
 	userInfo.seats = [...new Set(userInfo.seats)];
@@ -41,7 +41,7 @@ app.post('/bookings', async (req, res)=>{
 			return res.status(400).json({message: `Invalid seat ID: ${seatElement}`});
 		}
 		if(!(chkAvailability(seatElement, seats.seats))){
-			return res.status(409).json({message:"SeatID valid but not available"});
+			return res.status(409).json({message:`seat ${seatElement}just taken`});
 		}
 	}
 	//critical section
