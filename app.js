@@ -1,6 +1,8 @@
 const express = require('express');
 const seats = require('./seats.js');
 const { chkValidEntry, chkAvailability } = require('./booking.js');
+const { Mutex } = require('async-mutex');
+const bookingMutex = new Mutex();
 const port = 3000;
 const app = express();
 app.use(express.json());
@@ -25,29 +27,53 @@ app.get('/seats', (req, res)=>{
 	res.status(200).json({message:`seats`,queryFilter,results})
 })
 
-//Booking info
-app.post('/bookings', (req, res)=>{
+//post route for locking seats
+app.post('/bookings', async (req, res)=>{
 	const userInfo = req.body;
-	
 	if(!userInfo.mobile || userInfo.mobile.length !== 10 || !userInfo.seats || userInfo.seats.length > 10 || userInfo.seats.length <= 0){
 		return res.status(400).json({message:"only 10 digit mobile numbers allowed"});
 	}
 	//remove duplicates
 	userInfo.seats = [...new Set(userInfo.seats)];
 
-	userInfo.seats.forEach(seatElement => {
-		if(!(chkValidEntry(seatElement))){
-			return res.status(400).json({message:"Invalid seat ID "});
+	for(const seatElement of userInfo.seats) {
+		if(!chkValidEntry(seatElement)) {
+			return res.status(400).json({message: `Invalid seat ID: ${seatElement}`});
 		}
 		if(!(chkAvailability(seatElement, seats.seats))){
-			return res.status(400).json({message:"SeatID valid but not available"});
+			return res.status(409).json({message:"SeatID valid but not available"});
 		}
+	}
+	//critical section
+	const release = await bookingMutex.acquire();
+	try{
+		//validating again
+		for(const seatElement of userInfo.seats) {
+			if(!(chkAvailability(seatElement, seats.seats))){
+				return res.status(409).json({message:`seat ${seatElement}just taken`});
+			}
+		}
+		//locking each seat user requested
+		const bookingId = crypto.randomUUID();
+		const lockExpiry = Date.now() + 5 * 60 * 1000;  // 5 minutes from now
 		
-	});
+		for(const userSeat of userInfo.seats){
+			const seatToLock = seats.seats.find((so)=>so.id === userSeat);
+			seatToLock.status = "locked";
+			seatToLock.bookingId = bookingId;
+			seatToLock.lockExpiry = lockExpiry;
+			seatToLock.lockedAt = Date.now();
+			seatToLock.lockedBy = bookingId;
+		}
+		res.status(201).json({message:`locked following seats`,userInfo});		
+			
+	} finally{
+		release();
+		
+	} 
 	
-	res.status(200).json({message:"data valid",userInfo});
-
-})
+});
+//post route for booking after payment
 app.listen(port ,()=>{
 	console.log(`Server started at http://localhost:${port}` );
 	
