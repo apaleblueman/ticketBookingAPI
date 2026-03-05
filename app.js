@@ -1,6 +1,6 @@
 const express = require('express');
 const seats = require('./seats.js');
-const { confirmBooking, chkValidEntry, chkAvailability, pending_bookings,confirmed_bookings} = require('./booking.js');
+const { chkValidEntry, chkAvailability,resetSeat, pending_bookings,confirmed_bookings} = require('./booking.js');
 const { Mutex } = require('async-mutex');
 const bookingMutex = new Mutex();
 const port = 3000;
@@ -56,7 +56,8 @@ app.post('/bookings', async (req, res)=>{
 		}
 		//locking each seat user requested
 		const bookingId = crypto.randomUUID();
-		const lockExpiry = Date.now() + 5 * 60 * 1000;  // 5 minutes from now
+		const lockExpiry = Date.now() + (5 * 60 * 1000);  // 5 minutes from now
+		
 		
 		for(const userSeat of userInfo.seats){
 			const seatToLock = seats.seats.find((so)=>so.id === userSeat);
@@ -87,17 +88,32 @@ app.post('/bookings', async (req, res)=>{
 app.post('/bookings/:bookingID/confirm', (req,res)=>{
 		const bookingID = req.params.bookingID;
 		const foundBookingObj = pending_bookings.find((po)=> po.id == bookingID)
-		
-		if(bookingID === foundBookingObj.id){
-			confirmed_bookings.push(foundBookingObj);
-			
-			foundBookingObj.seats.forEach(ID => {
-				confirmBooking(ID, seats.seats);
-			});
-			res.status(200).json({message:`confirmed ${bookingID} in pending_bookings`, "confirmed booking":confirmed_bookings});
-		}else{res.status(404).json({message:`bookingid ${bookingID} does not exist in pending_bookings`});}		
-})
+		///last left here - fix foreach loops issues and lock expiry checks!!!!
+		if(foundBookingObj){			
+			for(const ID of foundBookingObj.seats){
+				var currentStatus = true;
+				if(foundBookingObj.expiresAt < Date.now()){
+					resetSeat(ID, seats.seats)
+					currentStatus = false;
+				}
+			}
+			if(!currentStatus){return res.status(410).json({message:`bookingid ${bookingID}'s locked time expired`});}
+			else{
+				// confirmBooking(seats.seats, foundBookingObj.seats)
+				
+				for(const lockedSeat of foundBookingObj.seats){
+						const seatToBook = seats.seats.find((so)=> so.id === lockedSeat);
+						seatToBook.status = "booked";
+				}
+				confirmed_bookings.push(foundBookingObj);
+				res.status(200).json({message:`confirmed ${bookingID} in pending_bookings`, "confirmed booking":confirmed_bookings});	
+			}
+		}else{
+			res.status(404).json({message:`bookingid ${bookingID} does not exist in pending_bookings`});
+		}		
+});
+
+//start server
 app.listen(port ,()=>{
-	console.log(`Server started at http://localhost:${port}` );
-	
+	console.log(`Server started at http://localhost:${port}`);
 })

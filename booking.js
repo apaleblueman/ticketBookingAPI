@@ -10,17 +10,25 @@ function chkAvailability(seatID, seat_array){
     return (seatObjFound.status == "available");
 }
 
-function confirmBooking(seatID, seat_array){
-        seat_array.forEach(seatToConfirm => {
-                        if(seatToConfirm.id === seatID){
-                            seatToConfirm.status = "booked";
+// function confirmBooking(seat_array, foundBookingObjarray){
+//         for(lockedSeat of foundBookingObjarray){
+//             for(seatObj of seat_array){
+//                 if(seatObj === lockedSeat){
+//                     seatObj.status = "booked";
+//                 }
+//             }
+//         }
+// }
 
-
-                            return true;
-                        }
-                        else{
-                            return false;
-                        }
-        });
+function resetSeat(seatID, seat_array){
+    seat_array.forEach(seatObj => {
+        if(seatObj.id === seatID){
+            seatObj.status = "available";
+            seatObj.bookingId = null;
+            seatObj.lockExpiry = null;
+            seatObj.lockedAt = null;
+            seatObj.lockedBy =null;
+        }
+    });
 }
-module.exports = {confirmed_bookings, pending_bookings, chkValidEntry, chkAvailability, confirmBooking};
+module.exports = {confirmed_bookings, pending_bookings, chkValidEntry, chkAvailability,resetSeat};
