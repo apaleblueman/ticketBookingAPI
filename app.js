@@ -91,6 +91,7 @@ app.post('/bookings/:bookingID/confirm', (req,res)=>{
 		if(bookingID === foundBookingObj.id){
 			confirmed_bookings.push(foundBookingObj);
 			res.status(200).json({message:`confirmed ${bookingID} in pending_bookings`, "confirmed booking":confirmed_bookings});
+			
 		}else{
 			res.status(404).json({message:`bookingid ${bookingID} does not exist in pending_bookings`});
 		}		
