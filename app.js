@@ -33,6 +33,7 @@ app.post('/bookings', async (req, res)=>{
 	if(!userInfo.mobile || userInfo.mobile.length !== 10 || !userInfo.seats || userInfo.seats.length > 10 || userInfo.seats.length <= 0){
 		return res.status(400).json({message:"only 10 digit mobile numbers and no more that 10 seats allowed"});
 	}
+	
 	//remove duplicates
 	userInfo.seats = [...new Set(userInfo.seats)];
 
@@ -64,13 +65,21 @@ app.post('/bookings', async (req, res)=>{
 			seatToLock.lockExpiry = lockExpiry;
 			seatToLock.lockedAt = Date.now();
 			seatToLock.lockedBy = bookingId;
-			pending_bookings.push(seatToLock);
 		}
-		res.status(201).json({message:`locked following seats`,userInfo, "pending_bookings":pending_bookings});		
+		const pendingBooking = {
+			id: bookingId,
+			mobile: userInfo.mobile,
+			status: "pending",
+			seats: userInfo.seats,
+			expiresAt: lockExpiry,
+			createdAt: Date.now(),
+			totalSeats: userInfo.seats.length
+		}
+		pending_bookings.push(pendingBooking);
+		res.status(201).json({message:`locked following seats`,userInfo, "current pending booking":pendingBooking});		
 			
 	} finally{
 		release();
-		
 	} 
 	
 });
