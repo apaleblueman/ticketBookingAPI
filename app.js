@@ -1,6 +1,6 @@
 const express = require('express');
 const seats = require('./seats.js');
-const { chkValidEntry, chkAvailability, pending_bookings } = require('./booking.js');
+const { chkValidEntry, chkAvailability, pending_bookings,confirmed_bookings } = require('./booking.js');
 const { Mutex } = require('async-mutex');
 const bookingMutex = new Mutex();
 const port = 3000;
@@ -51,7 +51,7 @@ app.post('/bookings', async (req, res)=>{
 		//validating again
 		for(const seatElement of userInfo.seats) {
 			if(!(chkAvailability(seatElement, seats.seats))){
-				return res.status(409).json({message:`seat ${seatElement}just taken`});
+				return res.status(409).json({message:`seat ${seatElement} already taken`});
 			}
 		}
 		//locking each seat user requested
@@ -84,6 +84,17 @@ app.post('/bookings', async (req, res)=>{
 	
 });
 //post route for booking after payment
+app.post('/bookings/:bookingID/confirm', (req,res)=>{
+		const bookingID = req.params.bookingID;
+		const foundBookingObj = pending_bookings.find((po)=> po.id == bookingID)
+		
+		if(bookingID === foundBookingObj.id){
+			confirmed_bookings.push(foundBookingObj);
+			res.status(200).json({message:`confirmed ${bookingID} in pending_bookings`, "confirmed booking":confirmed_bookings});
+		}else{
+			res.status(404).json({message:`bookingid ${bookingID} does not exist in pending_bookings`});
+		}		
+})
 app.listen(port ,()=>{
 	console.log(`Server started at http://localhost:${port}` );
 	
