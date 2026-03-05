@@ -1,6 +1,6 @@
 // This will store all bookings
-const bookings = [];
-
+const confirmed_bookings = [];
+const pending_bookings = [];
 function chkValidEntry(element){
         return /^[A-D](10|[1-5])$/.test(element);
 }
@@ -10,4 +10,4 @@ function chkAvailability(seatID, seat_array){
     return (seatObjFound.status == "available");
 }
 
-module.exports = {bookings, chkValidEntry, chkAvailability};
+module.exports = {confirmed_bookings, pending_bookings, chkValidEntry, chkAvailability};

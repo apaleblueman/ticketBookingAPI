@@ -1,6 +1,6 @@
 const express = require('express');
 const seats = require('./seats.js');
-const { chkValidEntry, chkAvailability } = require('./booking.js');
+const { chkValidEntry, chkAvailability, pending_bookings } = require('./booking.js');
 const { Mutex } = require('async-mutex');
 const bookingMutex = new Mutex();
 const port = 3000;
@@ -64,8 +64,9 @@ app.post('/bookings', async (req, res)=>{
 			seatToLock.lockExpiry = lockExpiry;
 			seatToLock.lockedAt = Date.now();
 			seatToLock.lockedBy = bookingId;
+			pending_bookings.push(seatToLock);
 		}
-		res.status(201).json({message:`locked following seats`,userInfo});		
+		res.status(201).json({message:`locked following seats`,userInfo, "pending_bookings":pending_bookings});		
 			
 	} finally{
 		release();
