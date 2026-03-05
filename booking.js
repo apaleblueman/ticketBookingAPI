@@ -10,4 +10,17 @@ function chkAvailability(seatID, seat_array){
     return (seatObjFound.status == "available");
 }
 
-module.exports = {confirmed_bookings, pending_bookings, chkValidEntry, chkAvailability};
+function confirmBooking(seatID, seat_array){
+        seat_array.forEach(seatToConfirm => {
+                        if(seatToConfirm.id === seatID){
+                            seatToConfirm.status = "booked";
+
+
+                            return true;
+                        }
+                        else{
+                            return false;
+                        }
+        });
+}
+module.exports = {confirmed_bookings, pending_bookings, chkValidEntry, chkAvailability, confirmBooking};
