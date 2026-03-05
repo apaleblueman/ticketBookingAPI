@@ -10,15 +10,7 @@ function chkAvailability(seatID, seat_array){
     return (seatObjFound.status == "available");
 }
 
-// function confirmBooking(seat_array, foundBookingObjarray){
-//         for(lockedSeat of foundBookingObjarray){
-//             for(seatObj of seat_array){
-//                 if(seatObj === lockedSeat){
-//                     seatObj.status = "booked";
-//                 }
-//             }
-//         }
-// }
+
 
 function resetSeat(seatID, seat_array){
     seat_array.forEach(seatObj => {
