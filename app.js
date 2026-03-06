@@ -86,31 +86,39 @@ app.post('/bookings', async (req, res)=>{
 });
 //post route for booking after payment
 app.post('/bookings/:bookingID/confirm', (req,res)=>{
-		const bookingID = req.params.bookingID;
-		const foundBookingObj = pending_bookings.find((po)=> po.id == bookingID)
-		///last left here - fix foreach loops issues and lock expiry checks!!!!
-		if(foundBookingObj){			
-			for(const ID of foundBookingObj.seats){
-				var currentStatus = true;
-				if(foundBookingObj.expiresAt < Date.now()){
-					resetSeat(ID, seats.seats)
-					currentStatus = false;
-				}
+		const userBookingID = req.params.bookingID;
+		const bookingRecord = pending_bookings.find((po)=>po.id === userBookingID);
+		if(!bookingRecord){res.status(404).json({message:`booking record ${userBookingID} does not exist!`})}
+		if(bookingRecord.expiresAt < Date.now()){
+			for(const lockedSeat in bookingRecord.seats){
+				const seatFound = seats.seats.find((so)=>so.id === lockedSeat);
+				seatFound.status = "available";
+				seatFound.bookingId = null;
+				seatFound.lockExpiry = null;
+				seatFound.lockedAt = null;
+				seatFound.lockedBy =null;
 			}
-			if(!currentStatus){return res.status(410).json({message:`bookingid ${bookingID}'s locked time expired`});}
-			else{
-				// confirmBooking(seats.seats, foundBookingObj.seats)
+			const indexToRemove = pending_bookings.findIndex((po)=>po.id === userBookingID);
+			pending_bookings.splice(indexToRemove, 1);
+			res.status(410).json({message:"Booking record's lock expired!"})
+		}
+		else{
+			for(const lockedSeat of bookingRecord.seats){
+				const seatToConfirm = seats.seats.find((so)=>so.id === lockedSeat);
+				if(!seatToConfirm){return res.status(409).json({message:`seat ${seatToConfirm.id} does not exist!`})}
+				if(seatToConfirm.status !== "locked"){return res.status(409).json({message:`seat ${seatToConfirm.id} is not locked!`})}
+				if(seatToConfirm.lockedBy !== userBookingID){return res.status(409).json({message:`seat ${seatToConfirm.id} locked by another booking ID`})}
 				
-				for(const lockedSeat of foundBookingObj.seats){
-						const seatToBook = seats.seats.find((so)=> so.id === lockedSeat);
-						seatToBook.status = "booked";
-				}
-				confirmed_bookings.push(foundBookingObj);
-				res.status(200).json({message:`confirmed ${bookingID} in pending_bookings`, "confirmed booking":confirmed_bookings});	
 			}
-		}else{
-			res.status(404).json({message:`bookingid ${bookingID} does not exist in pending_bookings`});
-		}		
+
+			for(const lockedSeat of bookingRecord.seats){
+				const seatToConfirm = seats.seats.find((so)=>so.id === lockedSeat);
+				seatToConfirm.status = "booked";
+			}
+			res.status(200).json({message:`seat ${bookingRecord.seats} booked succesfully`})
+
+
+		}
 });
 
 //start server

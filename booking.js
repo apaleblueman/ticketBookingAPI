@@ -12,15 +12,6 @@ function chkAvailability(seatID, seat_array){
 
 
 
-function resetSeat(seatID, seat_array){
-    seat_array.forEach(seatObj => {
-        if(seatObj.id === seatID){
-            seatObj.status = "available";
-            seatObj.bookingId = null;
-            seatObj.lockExpiry = null;
-            seatObj.lockedAt = null;
-            seatObj.lockedBy =null;
-        }
-    });
-}
-module.exports = {confirmed_bookings, pending_bookings, chkValidEntry, chkAvailability,resetSeat};
+
+
+module.exports = {confirmed_bookings, pending_bookings, chkValidEntry, chkAvailability};
